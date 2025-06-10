@@ -1,0 +1,25 @@
+version: 4.11.3
+apiVersion: v2
+appVersion: 1.11.3
+name: ingress-nginx
+description: Ingress controller for Kubernetes using NGINX as a reverse proxy and
+  load balancer
+home: https://github.com/kubernetes/ingress-nginx
+icon: https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Nginx_logo.svg/500px-Nginx_logo.svg.png
+annotations:
+  artifacthub.io/changes: |
+    - Update Ingress-Nginx version controller-v1.11.3
+  artifacthub.io/prerelease: "false"
+keywords:
+- ingress
+- nginx
+kubeVersion: '>=1.21.0-0'
+maintainers:
+- name: cpanato
+- name: Gacko
+- name: puerco
+- name: rikatz
+- name: strongjz
+- name: tao12345666333
+sources:
+- https://github.com/kubernetes/ingress-nginx
