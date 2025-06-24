@@ -309,7 +309,7 @@ server_edge:
       CertFileNameServer: null
       ClusteringEnvironmentSetup: NotClustered
       Db2InstHome: null
-      EnableCompGroupsSIA: PublicSector,SiebelWebTools,EAI,Workflow
+      EnableCompGroupsSIA: EAI,PublicSector,SiebelWebTools,Workflow
       Encrypt: null
       LocalSynchMgrPort: '40400'
       ModifyServerAuth: null
