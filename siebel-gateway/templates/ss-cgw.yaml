@@ -124,6 +124,9 @@ spec:
           - name: JMX_OPTS
             value: "-javaagent:/config/jmx_prometheus_javaagent-0.20.0.jar=8088:/config/prometheus-jmx-config.yaml"
           {{- end }}
+          {{- if .Values.cgw.envlist }}
+          {{ .Values.cgw.envlist | toYaml | nindent 10 }}
+          {{- end }}
           - name: containerMode
             value: "CGW"
           - name: SBL_HEAP_OPTS

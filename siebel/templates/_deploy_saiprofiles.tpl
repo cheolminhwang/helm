@@ -4,6 +4,7 @@
 {{- $profile := ( get $saiservermap "profile" ) -}}
 {{- $replicas := ( get $saiservermap "replicas" ) -}}
 {{- $affinity := ( get $saiservermap "affinity" ) -}}
+{{- $envlist := ( get $saiservermap "envlist" ) -}}
 #{{- println "%d" $replicas }}
 {{- $saiserverPrefix := ( get $saiservermap "sai_prefix" ) | replace "-" "_" -}}
 {{- if gt ($saiserverPrefix | len) 10 }}
@@ -67,12 +68,12 @@ spec:
     port: 4430
     protocol: TCP
     targetPort: 4430
-  {{ if $root.Values.monitoring.enableMonitoring }}
+  {{- if $root.Values.monitoring.enableMonitoring }}
   - name: jmx-metrics
     port: 8088
     protocol: TCP
     targetPort: 8088
-  {{ end }}
+  {{- end }}
   clusterIP: None
   selector: {{- include "siebel.selectorLabels" $root  | nindent 4 }}
     app.siebel.tier: {{ $saiServer }}
@@ -105,10 +106,10 @@ spec:
           ports:
           - containerPort: 4430
             name: tomcat-port
-          {{ if $root.Values.monitoring.enableMonitoring }}
+          {{- if $root.Values.monitoring.enableMonitoring }}
           - containerPort: 8088
             name: jmx-metrics
-          {{ end }}
+          {{- end }}
           volumeMounts:
           - name: persist-storage
             mountPath: /persistent
@@ -148,16 +149,19 @@ spec:
           - name: keystore
             mountPath: /siebel/mde/tls_certs/server.pem
             subPath: server.pem
-          {{ if $root.Values.monitoring.enableMonitoring }}
+          {{- if $root.Values.monitoring.enableMonitoring }}
           - name: prometheus-jmx-config
             mountPath: /config/prometheus-jmx-config.yaml
             subPath: prometheus-jmx-config.yaml
-          {{ end }}
+          {{- end }}
           env:
-          {{ if $root.Values.monitoring.enableMonitoring }}
+          {{- if $root.Values.monitoring.enableMonitoring }}
           - name: JMX_OPTS
             value: "-javaagent:/config/jmx_prometheus_javaagent-0.20.0.jar=8088:/config/prometheus-jmx-config.yaml"
-          {{ end }}
+          {{- end }}
+          {{- if $envlist }}
+          {{ $envlist | toYaml | nindent 10 }}
+          {{- end }}
           - name: containerMode
             value: "SAI"
           - name: SBL_HEAP_OPTS
@@ -345,11 +349,11 @@ spec:
           configMap:
             name: log-collector-config
         {{ end }}
-        {{ if $root.Values.monitoring.enableMonitoring }}
+        {{- if $root.Values.monitoring.enableMonitoring }}
         - name: prometheus-jmx-config
           configMap:
             name: prometheus-jmx-config
-        {{ end }}
+        {{- end }}
         - name: tns-admin
           secret:
             defaultMode: 420
@@ -357,4 +361,30 @@ spec:
       securityContext:
         fsGroup: 1000
 
+# Service for each replicas of statefulset
+{{- $replicaCount := ($replicas | int) -}}
+{{- range $i, $e := until $replicaCount }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $saiServer }}-{{ $i }}
+  namespace: {{ $root.Release.Namespace }}
+  labels: {{- include "siebel.labels" $root  | nindent 4 }}
+    app.kubernetes.io/component: {{ $saiServer }}-{{ $i }}
+spec:
+  ports:
+  - name: tomcat-port
+    port: 4430
+    protocol: TCP
+    targetPort: 4430
+  {{- if $root.Values.monitoring.enableMonitoring }}
+  - name: jmx-metrics
+    port: 8088
+    protocol: TCP
+    targetPort: 8088
+  {{ end }}
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ $saiServer }}-{{ $i }}
+{{- end }}
 {{ end -}}

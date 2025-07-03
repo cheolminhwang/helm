@@ -102,6 +102,9 @@ spec:
           - name: JMX_OPTS
             value: "-javaagent:/config/jmx_prometheus_javaagent-0.20.0.jar=8088:/config/prometheus-jmx-config.yaml"
           {{- end }}
+          {{- if .Values.smc.envlist }}
+          {{ .Values.smc.envlist | toYaml | nindent 10 }}
+          {{- end }}
           - name: containerMode
             value: "SAI"
           - name: SBL_HEAP_OPTS

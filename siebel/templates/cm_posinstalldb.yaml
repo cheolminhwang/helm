@@ -26,6 +26,8 @@ data:
     echo "else LD_LIBRARY_PATH=\${SIEBEL_ROOT}/lib:\${SIEBEL_ROOT}/lib/odbc/merant:\${MWHOME}/lib:\${SQLANY}/lib:/usr/lib:\${LD_LIBRARY_PATH}" >> /persistent/siebsrvr/siebenv.sh
     echo "fi" >> /persistent/siebsrvr/siebenv.sh
     echo "export LD_LIBRARY_PATH" >> /persistent/siebsrvr/siebenv.sh
+    echo "LD_LIBRARY_PATH=\${SIEBEL_ROOT}/../oracledbclient:\${LD_LIBRARY_PATH} ; export LD_LIBRARY_PATH" >> /persistent/siebsrvr/siebenv.sh
+    echo "ulimit -s 8192; ulimit -Hs 8192" >> /persistent/siebsrvr/siebenv.sh
     echo "MWREGISTRY=\${MWHOME}/system/registry.bin ; export MWREGISTRY" >> /persistent/siebsrvr/siebenv.sh
     echo "MWCORE_PRIVATE_DATA=\${MWHOME}/.mw/core_data ; export MWCORE_PRIVATE_DATA" >> /persistent/siebsrvr/siebenv.sh
     echo "MWUSER_DIRECTORY=\${MWHOME}/.mw ; export MWUSER_DIRECTORY" >> /persistent/siebsrvr/siebenv.sh
@@ -38,23 +40,45 @@ data:
     echo "MWOS=linux; export MWOS" >> /persistent/siebsrvr/siebenv.sh
     echo "\${MWHOME}/bin/regautobackup -off" >> /persistent/siebsrvr/siebenv.sh
     mkdir -p /persistent/siebsrvr/sys
-    echo "[ODBC]" > /persistent/siebsrvr/sys/.odbc.ini
-    echo "TraceDll=/siebel/mde/siebsrvr/lib/SEtrc27.so" >> /persistent/siebsrvr/sys/.odbc.ini
-    echo "TraceFile=odbctrace.out" >> /persistent/siebsrvr/sys/.odbc.ini
-    echo "Trace=0" >> /persistent/siebsrvr/sys/.odbc.ini
-    echo "InstallDir=/siebel/mde/siebsrvr" >> /persistent/siebsrvr/sys/.odbc.ini
-    echo " " >> /persistent/siebsrvr/sys/.odbc.ini
-    echo "[ODBC Data Sources]" >> /persistent/siebsrvr/sys/.odbc.ini
-    echo "SIEBELDB=MERANT 7.1 Oracle 12 Driver" >> /persistent/siebsrvr/sys/.odbc.ini
+    echo "[ODBC Data Sources]" > /persistent/siebsrvr/sys/.odbc.ini
+    echo "SIEBELDB=Oracle ODBC Driver" >> /persistent/siebsrvr/sys/.odbc.ini
     echo " " >> /persistent/siebsrvr/sys/.odbc.ini
     echo "[SIEBELDB]" >> /persistent/siebsrvr/sys/.odbc.ini
-    echo "Driver=/siebel/mde/siebsrvr/lib/SEor827.so" >> /persistent/siebsrvr/sys/.odbc.ini
-    echo "ColumnSizeAsCharacter=1" >> /persistent/siebsrvr/sys/.odbc.ini
-    echo "ColumnsAsChar=1" >> /persistent/siebsrvr/sys/.odbc.ini
-    echo "ArraySize=160000" >> /persistent/siebsrvr/sys/.odbc.ini
+    echo "Driver=OracleODBC" >> /persistent/siebsrvr/sys/.odbc.ini
+    echo "LobPrefetchSize=8388608" >> /persistent/siebsrvr/sys/.odbc.ini
+    echo "FetchBufferSize=1048576" >> /persistent/siebsrvr/sys/.odbc.ini
     echo "ServerName=${TNS_CONNECT_STRING}" >> /persistent/siebsrvr/sys/.odbc.ini
+    echo "[DEFAULT]" > /persistent/siebsrvr/sys/odbcinst.ini
+    echo "Description=ODBC for Oracle" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "Driver=/siebel/mde/oracledbclient/libsqora.so.19.1" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "FileUsage=1" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "DontDLCLose=1" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "UsageCount=" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo " " >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "[OracleODBC]" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "Description=ODBC for Oracle" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "Driver=/siebel/mde/oracledbclient/libsqora.so.19.1" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "Setup=" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "FileUsage=1" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "UsageCount=" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "DontDLCLose=1" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo " " >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "[DB2ODBC]" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "Description=ODBC for DB2" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "Driver=${DB2ODBCDriver}" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "Setup=" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "FileUsage=1" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "UsageCount=" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "DontDLCLose=1" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "[ODBC]" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "Trace=No" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "TraceAutoStop=0" >> /persistent/siebsrvr/sys/odbcinst.ini
+    echo "Tracefile=odbctrace.log" >> /persistent/siebsrvr/sys/odbcinst.ini
     chown -R 1000:1000 /persistent/siebsrvr
     source /siebel/mde/siebsrvr/siebenv.sh
+    TBLO=${TBLO^^}; export TBLO;
+    TBLOUSER=${TBLOUSER^^}; export TBLOUSER;
+    SIEBUSER=${SIEBUSER^^}; export SIEBUSER;
     /bin/bash -x /config/PostInstallDBSetup.sh
     status=$?
     echo "Exit Status : $status"

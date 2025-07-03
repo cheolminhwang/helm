@@ -5,6 +5,8 @@
 {{- $replicas := ( get $siebservermap "replicas" ) -}}
 {{- $sesResources := ( get $siebservermap "sesResources" ) -}}
 {{- $affinity := ( get $siebservermap "affinity" ) -}}
+{{- $envlist := ( get $siebservermap "envlist" ) -}}
+
 #{{- println "%d" $replicas }}
 {{- $siebserverPrefix := ( get $siebservermap "siebsrvr_prefix" ) | replace "-" "_" -}}
 {{- if gt ($siebserverPrefix | len) 10 }}
@@ -88,12 +90,12 @@ spec:
     port: 50001
     protocol: TCP
     targetPort: 50001
-  {{ if $root.Values.monitoring.enableMonitoring }}
+  {{- if $root.Values.monitoring.enableMonitoring }}
   - name: jmx-metrics
     port: 8088
     protocol: TCP
     targetPort: 8088
-  {{ end }}
+  {{- end }}
   clusterIP: None
   selector: {{- include "siebel.selectorLabels" $root  | nindent 4 }}
     app.siebel.tier: {{ $siebServer }}
@@ -134,10 +136,10 @@ spec:
             name: srbroker-port
           - containerPort: 50001
             name: siebsess-port
-          {{ if $root.Values.monitoring.enableMonitoring }}
+          {{- if $root.Values.monitoring.enableMonitoring }}
           - containerPort: 8088
             name: jmx-metrics
-          {{ end }}
+          {{- end }}
           volumeMounts:
           - name: persist-storage
             mountPath: /persistent
@@ -186,16 +188,19 @@ spec:
             mountPath: /siebel/mde/applicationcontainer_internal/siebelcerts/ewallet.p12
             subPath: ewallet.p12
           {{- end }}
-          {{ if $root.Values.monitoring.enableMonitoring }}
+          {{- if $root.Values.monitoring.enableMonitoring }}
           - name: prometheus-jmx-config
             mountPath: /config/prometheus-jmx-config.yaml
             subPath: prometheus-jmx-config.yaml
-          {{ end }}
+          {{- end }}
           env:
-          {{ if $root.Values.monitoring.enableMonitoring }}
+          {{- if $root.Values.monitoring.enableMonitoring }}
           - name: JMX_OPTS
             value: "-javaagent:/config/jmx_prometheus_javaagent-0.20.0.jar=8088:/config/prometheus-jmx-config.yaml"
-          {{ end }}
+          {{- end }}
+          {{- if $envlist }}
+          {{ $envlist | toYaml | nindent 10 }}
+          {{- end }}
           - name: containerMode
             value: "SES"
           - name: SBL_HEAP_OPTS
@@ -393,11 +398,60 @@ spec:
           configMap:
             name: log-collector-config
         {{ end }}
-        {{ if $root.Values.monitoring.enableMonitoring }}
+        {{- if $root.Values.monitoring.enableMonitoring }}
         - name: prometheus-jmx-config
           configMap:
             name: prometheus-jmx-config
-        {{ end }}
+        {{- end }}
       securityContext:
         fsGroup: 1000
+
+# Service for each replicas of statefulset
+{{- $replicaCount := ($replicas | int) -}}
+{{- range $i, $e := until $replicaCount }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $siebServer }}-{{ $i }}
+  namespace: {{ $root.Release.Namespace }}
+  labels: {{- include "siebel.labels" $root  | nindent 4 }}
+    app.kubernetes.io/component: {{ $siebServer }}-{{ $i }}
+spec:
+  ports:
+  - name: tomcat-port
+    port: 4430
+    protocol: TCP
+    targetPort: 4430
+  - name: scb-port
+    port: 2321
+    protocol: TCP
+    targetPort: 2321
+  - name: syncmgr-port
+    port: 40400
+    protocol: TCP
+    targetPort: 40400
+  - name: srbroker-port
+    port: 50000
+    protocol: TCP
+    targetPort: 50000
+  - name: siebsess-port
+    port: 50001
+    protocol: TCP
+    targetPort: 50001
+  {{- $portrange := untilStep 49150 49253 1 -}}
+  {{- range $index, $value := $portrange }}
+  - name: dynamic-{{ $index }}
+    port: {{ $value }}
+    targetPort: {{ $value }}
+  {{- end }}  
+  {{- if $root.Values.monitoring.enableMonitoring }}
+  - name: jmx-metrics
+    port: 8088
+    protocol: TCP
+    targetPort: 8088
+  {{- end }}
+  selector:
+    statefulset.kubernetes.io/pod-name: {{ $siebServer }}-{{ $i }}
+{{- end }}
 {{ end -}}

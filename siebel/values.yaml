@@ -6,7 +6,7 @@ image:
   siebel:
     registry: phx.ocir.io
     repository: siebeldev/cm/siebel
-    tag: "25.3-full"
+    tag: "25.6-full"
     imagePullPolicy: IfNotPresent
   busybox:
     registry: phx.ocir.io
@@ -24,11 +24,17 @@ image:
     tag: 22.12.1
     imagePullPolicy: IfNotPresent
 
-#Storage Information
+# Storage Information
 storage:
   - storageClassName: oci-fss
     nfsServer: dx4c-dev-mt.sub3f36566ba.dx4cdev.oraclevcn.com
     nfsPath: /okepodspv/DEMO-CRM
+
+# Migration Storage Information
+migration_storage:
+  storageClassName: oci-fss
+  nfsServer: dx4c-dev-mt.sub3f36566ba.dx4cdev.oraclevcn.com
+  nfsPath: /okepodspv/DEMO-CRM
 
 postinstalldb:
   enabled: true
@@ -84,7 +90,12 @@ siebelServer:
     # This is the node /pod affinity settings as defined in
     # https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
     affinity: {}
-    
+    # env variables to the siebserver pod can be overridden by defining the envlist like below:
+    envlist: {}
+    # envlist:
+    #   - name: SBL_HEAP_OPTS
+    #     value: "-Xms700m -Xmx7G"
+
   - profile: "siebsrvr_slc07ifd_20210815225847"
     replicas: 1
     siebsrvr_prefix: daisy
@@ -133,6 +144,11 @@ saiServer:
     #         type: AverageValue
 
     affinity: {}
+    # env variables to the saiserver pod can be overridden by defining the envlist like below:
+    envlist: {}
+    # envlist:
+    #   - name: SBL_HEAP_OPTS
+    #     value: "-Xms700m -Xmx7G"
 
 imagePullSecrets: #Add additional secrets as required if accessing multiple registries, create them prior to helm install
   - ocirsecret
